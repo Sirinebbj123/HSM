@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Patient, Doctor
+from .models import Appointment, User, Patient, Doctor
 from django.contrib.auth.password_validation import validate_password
 
 
@@ -34,6 +34,10 @@ class PatientRegisterSerializer(serializers.Serializer):
     address = serializers.CharField()
 
     def create(self, validated_data):
+        if User.objects.filter(username=validated_data['username']).exists():
+            raise serializers.ValidationError({"username": "Ce nom d'utilisateur existe déjà."})
+        if User.objects.filter(email=validated_data['email']).exists():
+            raise serializers.ValidationError({"email": "Cet email existe déjà."})
         # Création de l'utilisateur
         user = User.objects.create(
             username=validated_data['username'],
@@ -173,6 +177,7 @@ class DoctorListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doctor
         fields = [
+            'id',  # 💥 AJOUTEZ L'ID ICI 💥
             'username',
             'email',
             'full_name',
@@ -213,3 +218,18 @@ class PatientUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Patient
         fields = ['full_name', 'age', 'phone', 'address']
+
+
+
+# ... (Après tous les autres sérialiseurs)
+
+class AppointmentCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Appointment
+        fields = ['doctor', 'patient', 'date', 'time', 'reason']
+
+    def validate(self, data):
+        # 💡 NOTE : Vous devez implémenter ici la logique pour valider
+        # que l'heure et la date ne sont pas déjà réservées par le docteur.
+        # Vous devez également vous assurer que 'doctor' et 'patient' sont des instances valides.
+        return data

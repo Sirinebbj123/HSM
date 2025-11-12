@@ -33,3 +33,31 @@ class Doctor(models.Model):
 
     def __str__(self):
         return f"{self.full_name} ({self.specialization})"
+# Dans models.py, assurez-vous d'importer User, Doctor, Patient si ce n'est pas déjà fait
+
+class Appointment(models.Model):
+    # Clé étrangère vers le modèle Doctor
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='doctor_appointments')
+    # Clé étrangère vers le modèle Patient (si vous avez un modèle Patient)
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='patient_appointments')
+    
+    # Alternativement, si vous liez directement à l'utilisateur :
+    # patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='patient_appointments')
+    
+    date = models.DateField()
+    time = models.TimeField()
+    reason = models.TextField(max_length=500)
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('PENDING', 'En attente'),
+            ('CONFIRMED', 'Confirmé'),
+            ('CANCELLED', 'Annulé'),
+            ('COMPLETED', 'Terminé')
+        ],
+        default='PENDING'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"RDV: {self.patient.full_name} avec Dr. {self.doctor.full_name} le {self.date}"

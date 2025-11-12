@@ -1,4 +1,6 @@
+from django.shortcuts import render
 from rest_framework import generics
+from rest_framework import status
 from .models import User, Doctor, Patient
 from .serializers import RegisterSerializer,PatientRegisterSerializer,AdminRegisterSerializer, DoctorRegisterSerializer, DoctorListSerializer, DoctorUpdateSerializer,PatientListSerializer, PatientUpdateSerializer
 from rest_framework.permissions import AllowAny
@@ -32,10 +34,24 @@ class DoctorRegisterView(generics.CreateAPIView):
 
     queryset = User.objects.filter(role="doctor")
 
-class DoctorListView(generics.ListAPIView):
-    queryset = Doctor.objects.all() 
-    serializer_class = DoctorListSerializer
-    permission_classes = [IsAdminUser]
+# class DoctorListView(generics.ListAPIView):
+#     queryset = Doctor.objects.all() 
+#     serializer_class = DoctorListSerializer
+#     permission_classes = [IsAdminUser]
+from rest_framework.permissions import IsAuthenticated # S'assurer que ceci est importé
+
+class DoctorListView(APIView):
+    # 💥 AJOUTER CECI : Seuls les utilisateurs connectés peuvent voir la liste 💥
+    permission_classes = [IsAuthenticated] 
+    
+    def get(self, request):
+        doctors = Doctor.objects.all()  # 🔹 Récupère tous les docteurs
+        serializer = DoctorListSerializer(doctors, many=True)
+        # 💥 ATTENTION : 'status' n'est pas directement importé, il faut utiliser drf.status 💥
+        # Si vous utilisez status=status.HTTP_200_OK, assurez-vous de l'import :
+        # from rest_framework import status 
+        return Response(serializer.data, status=200) # Utiliser 200 si vous ne voulez pas importer drf.status
+
 class DoctorUpdateView(generics.RetrieveUpdateAPIView):
     queryset = Doctor.objects.all()
     serializer_class = DoctorUpdateSerializer

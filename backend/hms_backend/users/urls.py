@@ -17,10 +17,12 @@ urlpatterns = [
     path('patient-register/', PatientRegisterView.as_view(), name='patient_register'),
     path('admin-register/', AdminRegisterView.as_view(), name='admin_register'),
     path('doctor-register/', DoctorRegisterView.as_view(), name='doctor_register'),
-    path('doctor-list/', DoctorListView.as_view(), name='doctor_list'),
+    #path('doctor-list/', DoctorListView.as_view(), name='doctor_list'),
     path('doctor-update/<int:id>/', DoctorUpdateView.as_view(), name='doctor_update'),
     path('doctor-delete/<int:id>/', DoctorDeleteView.as_view(), name='doctor_delete'),
     path('patient-list/', PatientListView.as_view(), name='patient_list'),
     path('patient-update/<int:id>/', PatientUpdateView.as_view(), name='patient_update'),
     path('patient-delete/<int:id>/', PatientDeleteView.as_view(), name='patient_delete'),
+    path('doctor-list/', DoctorListView.as_view(), name='doctor_list'),
+
 ]

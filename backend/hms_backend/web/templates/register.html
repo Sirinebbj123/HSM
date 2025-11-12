@@ -21,27 +21,47 @@
       {% endfor %}
     {% endif %}
 
-    <form method="POST">
-      {% csrf_token %}
-      <div class="mb-4">
-        <label for="username" class="block text-gray-600">Nom d'utilisateur</label>
-        <input type="text" id="username" name="username" class="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-green-500" required>
-      </div>
+   <form method="POST">
+         {% csrf_token %}
 
-      <div class="mb-4">
-        <label for="email" class="block text-gray-600">Email</label>
-        <input type="email" id="email" name="email" class="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-green-500" required>
-      </div>
+         <div class="mb-4">
+           <label for="username" class="block text-gray-600">Nom d'utilisateur</label>
+           <input type="text" id="username" name="username" required class="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500" autocomplete="off">
+         </div>
 
-      <div class="mb-4">
-        <label for="password" class="block text-gray-600">Mot de passe</label>
-        <input type="password" id="password" name="password" class="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-green-500" required>
-      </div>
+         <div class="mb-4">
+           <label for="email" class="block text-gray-600">Email</label>
+           <input type="email" id="email" name="email" required class="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500" autocomplete="off">
+         </div>
 
-      <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-semibold rounded-md py-2 px-4 w-full">
-        Créer un compte
-      </button>
-    </form>
+          <div class="mb-4">
+             <label for="password" class="block text-gray-600">Mot de passe</label>
+             <input type="password" id="password" name="password" required class="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500" autocomplete="off">
+          </div>
+
+          <div class="mb-4">
+             <label for="full_name" class="block text-gray-600">Nom complet</label>
+             <input type="text" id="full_name" name="full_name" required class="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500" autocomplete="off">
+          </div>
+
+          <div class="mb-4">
+             <label for="age" class="block text-gray-600">Âge</label>
+             <input type="number" id="age" name="age" required class="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500" autocomplete="off">
+          </div>
+
+          <div class="mb-4">
+            <label for="phone" class="block text-gray-600">Téléphone</label>
+            <input type="text" id="phone" name="phone" required class="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500" autocomplete="off">
+          </div>
+
+          <div class="mb-4">
+            <label for="address" class="block text-gray-600">Adresse</label>
+            <input type="text" id="address" name="address" required class="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500" autocomplete="off">
+          </div>
+
+          <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-md py-2 px-4 w-full">Créer un compte</button>
+   </form>
+
 
     <div class="mt-6 text-blue-500 text-center">
       <a href="{% url 'login' %}" class="hover:underline">Déjà un compte ? Connectez-vous ici</a>
