@@ -1,0 +1,88 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Hospital Management System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="https://placehold.co/32x32/00b894/ffffff.png?text=H">
+</head>
+<body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
+
+  <!-- 🌐 NAVBAR -->
+  <nav class="bg-white shadow-md fixed top-0 w-full z-10">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-green-600">HMS</h1>
+      <div class="space-x-4">
+        <a href="{% url 'login' %}" class="text-gray-600 hover:text-green-600 font-semibold">Connexion</a>
+        <a href="{% url 'register' %}" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold">Inscription</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 🏥 HERO SECTION -->
+  <header class="flex flex-col lg:flex-row items-center justify-between container mx-auto px-6 mt-24">
+    <div class="lg:w-1/2 text-center lg:text-left">
+      <h2 class="text-4xl font-bold text-green-600 mb-4">Votre santé, notre priorité 💚</h2>
+      <p class="text-lg text-gray-600 mb-6">
+        Bienvenue sur la plateforme HMS — un système moderne de gestion hospitalière
+        conçu pour simplifier la vie des patients, médecins et administrateurs.
+      </p>
+      <div class="space-x-4">
+        <a href="{% url 'login' %}" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold">
+          Se connecter
+        </a>
+        <a href="{% url 'register' %}" class="border border-green-500 text-green-600 hover:bg-green-50 px-6 py-3 rounded-lg font-semibold">
+          Créer un compte
+        </a>
+      </div>
+    </div>
+
+    <div class="lg:w-1/2 mt-10 lg:mt-0">
+      <img src="https://placehold.co/600x400/00b894/ffffff.png?text=Hospital+Management+System"
+           alt="Illustration hôpital"
+           class="rounded-2xl shadow-lg">
+    </div>
+  </header>
+
+  <!-- 💡 SERVICES -->
+  <section class="container mx-auto px-6 py-16">
+    <h3 class="text-3xl font-bold text-center text-gray-800 mb-12">Nos fonctionnalités principales</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+
+      <div class="bg-white p-8 rounded-2xl shadow-md hover:shadow-lg transition">
+        <div class="text-green-500 text-4xl mb-4 text-center">🩺</div>
+        <h4 class="text-xl font-semibold text-center mb-2">Gestion des patients</h4>
+        <p class="text-gray-600 text-center">
+          Les médecins peuvent consulter les profils, historiques médicaux et rendez-vous de leurs patients.
+        </p>
+      </div>
+
+      <div class="bg-white p-8 rounded-2xl shadow-md hover:shadow-lg transition">
+        <div class="text-blue-500 text-4xl mb-4 text-center">📅</div>
+        <h4 class="text-xl font-semibold text-center mb-2">Rendez-vous en ligne</h4>
+        <p class="text-gray-600 text-center">
+          Les patients peuvent prendre rendez-vous facilement avec un docteur disponible.
+        </p>
+      </div>
+
+      <div class="bg-white p-8 rounded-2xl shadow-md hover:shadow-lg transition">
+        <div class="text-purple-500 text-4xl mb-4 text-center">📊</div>
+        <h4 class="text-xl font-semibold text-center mb-2">Tableaux de bord dynamiques</h4>
+        <p class="text-gray-600 text-center">
+          Des interfaces dédiées pour chaque rôle : admin, médecin, ou patient.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 🧾 FOOTER -->
+  <footer class="bg-white border-t border-gray-200 py-6 mt-auto">
+    <div class="container mx-auto text-center text-gray-500 text-sm">
+      © 2025 HMS — Tous droits réservés.
+    </div>
+  </footer>
+
+</body>
+</html>
