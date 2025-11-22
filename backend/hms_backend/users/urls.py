@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    ProtectedView, RegisterView, PatientRegisterView, AdminRegisterView,
+    AppointmentCreateView, AppointmentStatusUpdateView, DoctorAppointmentListView, MyDoctorAppointmentsView, PatientAppointmentListView, ProtectedView, RegisterView, PatientRegisterView, AdminRegisterView,
     DoctorRegisterView, DoctorListView, DoctorUpdateView, DoctorDeleteView,
     PatientListView, PatientUpdateView, PatientDeleteView
 )
@@ -24,5 +24,9 @@ urlpatterns = [
     path('patient-update/<int:id>/', PatientUpdateView.as_view(), name='patient_update'),
     path('patient-delete/<int:id>/', PatientDeleteView.as_view(), name='patient_delete'),
     path('doctor-list/', DoctorListView.as_view(), name='doctor_list'),
-
+    path('appointments/create/', AppointmentCreateView.as_view(), name='appointment_create'),
+    path('appointments/doctor/', DoctorAppointmentListView.as_view(), name='doctor_appointments'),
+    path('appointments/<int:id>/status/', AppointmentStatusUpdateView.as_view(), name='appointment_status'),
+    path('appointments/patient/<int:id>/', PatientAppointmentListView.as_view(), name='patient_appointments'),
+    path('appointments/my-doctor/', MyDoctorAppointmentsView.as_view(), name='my_doctor_appointments'),
 ]

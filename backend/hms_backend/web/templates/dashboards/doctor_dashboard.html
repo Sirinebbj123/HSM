@@ -1,146 +1,213 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Dashboard Médecin | Smart Hospital</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Styles personnalisés pour améliorer l'aspect */
-        .card {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-        }
-        .sidebar {
-            /* Simuler la couleur de fond bleu clair/gris */
-            background-color: #f0f4f8; /* Un bleu très clair */
-            min-width: 200px; /* Largeur fixe de la barre latérale */
-        }
-        .main-stat-value {
-            font-size: 2.25rem; /* text-4xl */
-            font-weight: 700; /* font-bold */
-            color: #1e40af; /* blue-800 */
-        }
-    </style>
-</head>
+{% extends 'base.html' %}
 
-<body class="flex min-h-screen antialiased bg-gray-50">
+{% block title %}Dashboard Docteur{% endblock %}
 
-    <aside class="sidebar p-4 flex flex-col justify-between border-r border-gray-200">
-        <div>
-            <div class="text-xl font-bold text-blue-700 mb-6">Smart Hospital</div>
-            
-            <nav class="space-y-2">
-                <a href="#" class="flex items-center p-3 text-sm font-semibold text-blue-700 bg-blue-100 rounded-lg">
-                     Dashboard
-                </a>
-                <a href="#" class="flex items-center p-3 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                     Patients
-                </a>
-                <a href="#" class="flex items-center p-3 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                     Appointments
-                </a>
-                <a href="#" class="flex items-center p-3 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                     Prescriptions
-                </a>
-                <a href="#" class="flex items-center p-3 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                     Lab Results
-                </a>
-                <a href="#" class="flex items-center p-3 text-sm text-gray-700 hover:bg-blue-50 rounded-lg">
-                    
+{% block header %}Tableau de bord Docteur{% endblock %}
 
-[Image of Chart icon]
- Reports
-                </a>
-            </nav>
-        </div>
-        
-        <div class="mt-8 border-t pt-4">
-            <a href="{% url 'logout' %}" class="flex items-center p-3 text-sm text-red-500 hover:bg-red-50 rounded-lg font-medium">
-                 Log Out
-            </a>
-            <div class="mt-4 flex items-center">
-                
-                <div class="ml-3 text-sm">
-                    <p class="font-medium text-gray-900">Dr. {{ username }}</p>
-                    <p class="text-xs text-gray-500">Internal Medicine</p>
-                </div>
-            </div>
-        </div>
-    </aside>
+{% block sidebar %}
+    <a href="{% url 'doctor_dashboard' %}" class="flex items-center space-x-3 p-3 rounded-lg text-white bg-emerald-600 font-semibold shadow-md transition duration-150 ease-in-out">
+        <i class="fa-solid fa-gauge-high w-5 h-5"></i>
+        <span>Tableau de bord</span>
+    </a>
+    <a href="{% url 'list_patients' %}" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out">
+        <i class="fa-solid fa-user-injured w-5 h-5"></i>
+        <span>Mes Patients</span>
+    </a>
+    <a href="#" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out">
+        <i class="fa-solid fa-calendar-check w-5 h-5"></i>
+        <span>Mon Agenda</span>
+    </a>
+    <a href="{% url 'profile_info' %}" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out">
+        <i class="fa-solid fa-user-gear w-5 h-5"></i>
+        <span>Mon Profil</span>
+    </a>
+{% endblock %}
 
-    <main class="flex-1 p-8 overflow-y-auto">
-        <header class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-semibold text-gray-800">Dashboard</h1>
-            <button class="flex items-center text-blue-600 hover:text-blue-800">
-                 AI Co-Pilot
-            </button>
-        </header>
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div class="card bg-white p-5 rounded-xl flex flex-col items-center">
-                <p class="text-sm text-gray-500 mb-2">Total Patients</p>
-                <div class="main-stat-value text-blue-600">3</div> </div>
-            <div class="card bg-white p-5 rounded-xl flex flex-col items-center">
-                <p class="text-sm text-gray-500 mb-2">Today's Appointments</p>
-                <div class="main-stat-value text-green-600">3</div>
-            </div>
-            <div class="card bg-white p-5 rounded-xl flex flex-col items-center">
-                <p class="text-sm text-gray-500 mb-2">New Reports</p>
-                <div class="main-stat-value text-yellow-600">3</div>
-            </div>
-            <div class="card bg-white p-5 rounded-xl flex flex-col items-center">
-                <p class="text-sm text-gray-500 mb-2">New Patients</p>
-                <div class="main-stat-value text-purple-600">8</div>
-            </div>
-        </div>
+<div class="max-w-full mx-auto">
+    <h1 class="text-3xl font-extrabold text-gray-800 mb-2">
+        <i class="fa-solid fa-hand-wave text-emerald-500 mr-2"></i> Bonjour, {{ stats.doctor_name }} !
+    </h1>
+    <p class="text-lg text-gray-600 mb-10 border-b pb-4">
+        Spécialité : <strong class="text-blue-600">{{ stats.doctor_specialization }}</strong>
+    </p>
 
-        <h2 class="text-xl font-semibold text-gray-700 mb-4">AI-Powered Tools</h2>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div class="card bg-white p-4 rounded-xl flex flex-col items-center text-center hover:shadow-lg transition">
-                
-                <p class="font-medium text-gray-800 mt-2">AI Co-Pilot</p>
-                <p class="text-xs text-gray-500 mt-1">Ask medical questions and get instant answers.</p>
-            </div>
-            </div>
-
-        <div class="flex flex-col lg:flex-row gap-4 mb-8">
-            <div class="lg:w-2/3 card bg-white p-6 rounded-xl">
-                <h3 class="text-lg font-semibold mb-4">Weekly Performance</h3>
-                <div class="h-64 bg-gray-100 flex items-center justify-center text-gray-400 rounded-lg">
-                     Graphique (Intégration Chart.js nécessaire)
-                </div>
-                <p class="text-sm text-center text-gray-500 mt-2">Number of Patients</p>
-            </div>
-
-            <div class="lg:w-1/3 card bg-white p-6 rounded-xl">
-                <header class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">Today's Schedule</h3>
-                    <button class="text-blue-500 text-sm font-medium hover:text-blue-700">Add</button>
-                </header>
-                
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center border-b pb-2">
-                        <div>
-                            <p class="font-medium">Khalid Al-Ghamdi</p>
-                            <p class="text-xs text-gray-500">09:00 AM</p>
-                        </div>
-                        <span class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">Confirmed</span>
-                    </div>
-                    </div>
-            </div>
-        </div>
-        
-        <h2 class="text-xl font-semibold text-gray-700 mb-4">Critical Alerts</h2>
-        <div class="critical-alerts-container card bg-white p-6 rounded-xl space-y-3">
-            <div class="flex justify-between items-start p-3 bg-red-50 rounded-lg border-l-4 border-red-500">
+    <!-- 🧾 Statistiques principales -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div class="stat-card bg-white p-6 rounded-2xl shadow-xl border-l-4 border-blue-500 hover:shadow-2xl transition duration-300 ease-in-out">
+            <div class="flex justify-between items-center">
                 <div>
-                    <p class="font-medium text-sm text-red-800">Critical result for Potassium level: 5.2 mEq/L</p>
-                    <p class="text-xs text-red-600">Patient: Sarah Abdullah - Time: 10:30 AM</p>
+                    <div class="text-sm font-medium text-blue-500 uppercase tracking-wider">Patients totaux</div>
+                    <div class="text-4xl font-bold text-gray-900 mt-1">{{ stats.total_patients }}</div>
+                    <div class="text-xs text-gray-500 mt-2">Suivis par vous</div>
                 </div>
-                <button class="text-sm font-medium text-red-600 hover:text-red-800">View Profile</button>
+                <div class="p-3 bg-blue-100 rounded-full text-blue-600">
+                    <i class="fa-solid fa-users text-2xl"></i>
+                </div>
             </div>
-            </div>
+        </div>
 
-    </main>
-</body>
-</html>
+        <div class="stat-card bg-white p-6 rounded-2xl shadow-xl border-l-4 border-emerald-500 hover:shadow-2xl transition duration-300 ease-in-out">
+            <div class="flex justify-between items-center">
+                <div>
+                    <div class="text-sm font-medium text-emerald-500 uppercase tracking-wider">RDV aujourd’hui</div>
+                    <div class="text-4xl font-bold text-gray-900 mt-1">{{ stats.today_appointments }}</div>
+                    <div class="text-xs text-gray-500 mt-2">Consultations planifiées</div>
+                </div>
+                <div class="p-3 bg-emerald-100 rounded-full text-emerald-600">
+                    <i class="fa-solid fa-calendar-day text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card bg-white p-6 rounded-2xl shadow-xl border-l-4 border-purple-500 hover:shadow-2xl transition duration-300 ease-in-out">
+            <div class="flex justify-between items-center">
+                <div>
+                    <div class="text-sm font-medium text-purple-500 uppercase tracking-wider">Nouveaux rapports</div>
+                    <div class="text-4xl font-bold text-gray-900 mt-1">{{ stats.new_reports }}</div>
+                    <div class="text-xs text-gray-500 mt-2">À examiner</div>
+                </div>
+                <div class="p-3 bg-purple-100 rounded-full text-purple-600">
+                    <i class="fa-solid fa-file-medical text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card bg-white p-6 rounded-2xl shadow-xl border-l-4 border-yellow-500 hover:shadow-2xl transition duration-300 ease-in-out">
+            <div class="flex justify-between items-center">
+                <div>
+                    <div class="text-sm font-medium text-yellow-500 uppercase tracking-wider">Nouveaux patients</div>
+                    <div class="text-4xl font-bold text-gray-900 mt-1">{{ stats.new_patients }}</div>
+                    <div class="text-xs text-gray-500 mt-2">Ce mois-ci</div>
+                </div>
+                <div class="p-3 bg-yellow-100 rounded-full text-yellow-600">
+                    <i class="fa-solid fa-user-plus text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📅 Agenda -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-white p-8 rounded-2xl shadow-xl">
+            <h2 class="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-3 flex items-center">
+                <i class="fa-solid fa-calendar-day text-emerald-500 mr-3"></i> Agenda du jour
+            </h2>
+            {% if schedule %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Heure</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-100">
+                            {% for s in schedule %}
+                            <tr class="hover:bg-emerald-50 transition duration-150 ease-in-out">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ s.time }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ s.name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        {% if s.status == 'Confirmed' %}bg-green-100 text-green-800{% elif s.status == 'Pending' %}bg-yellow-100 text-yellow-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ s.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-gray-500 p-6 border border-dashed rounded-xl bg-gray-50 text-center shadow-inner">
+                    <i class="fa-solid fa-circle-info mr-2 text-xl text-gray-400"></i>
+                    Aucun rendez-vous pour aujourd’hui.
+                </p>
+            {% endif %}
+        </div>
+
+        <!-- 🚨 Alertes -->
+        <div class="bg-white p-8 rounded-2xl shadow-xl">
+            <h2 class="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-3 flex items-center">
+                <i class="fa-solid fa-triangle-exclamation text-red-500 mr-3"></i> Alertes critiques
+            </h2>
+            {% if alerts %}
+                <div class="space-y-4">
+                    {% for a in alerts %}
+                        <div class="p-4 bg-red-50 border-l-4 border-red-500 rounded-lg shadow-sm hover:shadow-md transition duration-150 ease-in-out">
+                            <p class="font-bold text-red-700 flex justify-between items-center">
+                                <span><i class="fa-solid fa-bell mr-2"></i> {{ a.type }}</span>
+                                <span class="text-xs text-gray-500">{{ a.time }}</span>
+                            </p>
+                            <p class="text-sm text-gray-700 mt-1">Patient : <strong class="text-gray-900">{{ a.patient }}</strong></p>
+                            <p class="text-sm text-gray-700">Valeur : {{ a.value }}</p>
+                            <p class="text-sm text-gray-700">Médicament : {{ a.drug }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-gray-500 p-6 border border-dashed rounded-xl bg-gray-50 text-center shadow-inner">
+                    <i class="fa-solid fa-circle-check mr-2 text-xl text-green-500"></i>
+                    Aucune alerte critique actuellement.
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 📈 Graphique -->
+    <div class="mt-10 bg-white p-8 rounded-2xl shadow-xl">
+        <h2 class="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-3 flex items-center">
+            <i class="fa-solid fa-chart-line text-blue-500 mr-3"></i> Performance hebdomadaire
+        </h2>
+        <div class="p-4 rounded-xl border border-gray-200">
+            <canvas id="weeklyChart" height="100"></canvas>
+        </div>
+    </div>
+</div>
+<!--
+<script>
+  const ctx = document.getElementById('weeklyChart');
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: [{% for d in weekly_performance_data %}'{{ d.day }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+      datasets: [{
+        label: 'Patients vus',
+        data: [{% for d in weekly_performance_data %}{{ d.patients }}{% if not forloop.last %},{% endif %}{% endfor %}],
+        backgroundColor: 'rgba(16, 185, 129, 0.8)', // emerald-500
+        borderColor: 'rgba(16, 185, 129, 1)',
+        borderWidth: 1,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'top',
+            },
+            title: {
+                display: true,
+                text: 'Nombre de patients vus par jour'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: 'rgba(0, 0, 0, 0.05)',
+                }
+            },
+            x: {
+                grid: {
+                    display: false
+                }
+            }
+        }
+    }
+  });
+</script>-->
+{% endblock %}

@@ -12,12 +12,17 @@ class User(AbstractUser):
     def __str__(self):
         return self.username
 class Patient(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='patient_profile')
-    full_name = models.CharField(max_length=150)
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="patient_profile"  # ✅ ajoute ceci
+    )
+    full_name = models.CharField(max_length=100)
     age = models.IntegerField()
     phone = models.CharField(max_length=20)
     address = models.CharField(max_length=255)
 
+    
     def __str__(self):
         return self.full_name
 

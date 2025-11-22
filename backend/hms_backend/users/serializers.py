@@ -233,3 +233,32 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
         # que l'heure et la date ne sont pas déjà réservées par le docteur.
         # Vous devez également vous assurer que 'doctor' et 'patient' sont des instances valides.
         return data
+    
+class AppointmentSerializer(serializers.ModelSerializer):
+    doctor_name = serializers.CharField(source='doctor.full_name', read_only=True)
+    patient_name = serializers.CharField(source='patient.full_name', read_only=True)
+    patient = serializers.PrimaryKeyRelatedField(read_only=True)
+    class Meta:
+        model = Appointment
+        fields = [
+            'id',
+            'doctor',
+            'doctor_name',
+            'patient',
+            'patient_name',
+            'date',
+            'time',
+            'reason',
+            'status',
+            'created_at'
+        ]
+        read_only_fields = ['status', 'created_at']  # 🟢 Le patient devient non obligatoire ici
+
+    def validate(self, data):
+        doctor = data['doctor']
+        date = data['date']
+        time = data['time']
+
+        if Appointment.objects.filter(doctor=doctor, date=date, time=time).exists():
+            raise serializers.ValidationError("Ce créneau est déjà réservé pour ce docteur.")
+        return data

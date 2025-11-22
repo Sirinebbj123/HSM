@@ -1,14 +1,13 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 import requests
-import datetime # Ajouté pour simuler les données ou filtrer plus tard
-from users.serializers import PatientRegisterSerializer, AdminRegisterSerializer
+from django.urls import reverse
+from django.utils import timezone
+from users.models import Doctor, Patient, User, Appointment
+from users.serializers import PatientRegisterSerializer, AdminRegisterSerializer, DoctorRegisterSerializer
 
-# ===============================
-# 🌐 Configuration de l'API Backend
-# ===============================
 API_BASE = "http://127.0.0.1:8000/api/"
-
 
 # ===============================
 # 🏠 Page d'accueil publique
@@ -25,7 +24,7 @@ def homepage(request):
 
 
 # ===============================
-# 👤 Page d’inscription (Register)
+# 👤 Inscription (Patient)
 # ===============================
 def register_page(request):
     if request.method == "POST":
@@ -42,310 +41,266 @@ def register_page(request):
         serializer = PatientRegisterSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
-            messages.success(request, "Compte patient créé avec succès !")
+            messages.success(request, "Compte patient créé avec succès ✅")
             return redirect("login")
         else:
-            messages.error(request, f"Erreur lors de la création du compte : {serializer.errors}")
-
+            messages.error(request, f"Erreur : {serializer.errors}")
     return render(request, "register.html")
 
+
 # ===============================
-# 🔐 Page de connexion (Login)
+# 🔐 Connexion
 # ===============================
 def login_page(request):
-    # Si déjà connecté → rediriger automatiquement
-    if request.session.get("role") == "admin":
-        return redirect("admin_dashboard")
-    elif request.session.get("role") == "doctor":
-        return redirect("doctor_dashboard")
-    elif request.session.get("role") == "patient":
-        return redirect("patient_dashboard")
+    if request.session.get("role") in ["admin", "doctor", "patient"]:
+        return redirect(f"{request.session.get('role')}_dashboard")
 
-    # Si utilisateur envoie le formulaire
     if request.method == "POST":
         username = request.POST.get("username")
         password = request.POST.get("password")
 
         try:
-            response = requests.post(API_BASE + "users/login/", json={
-                "username": username,
-                "password": password
-            })
+            response = requests.post(API_BASE + "users/login/", json={"username": username, "password": password})
 
-            # Si la connexion est réussie
             if response.status_code == 200:
                 data = response.json()
-                access_token = data.get("access")
-                refresh_token = data.get("refresh")
-                role = data.get("role")
-
-                # Sauvegarde dans la session Django
                 request.session["username"] = username
-                request.session["access_token"] = access_token
-                request.session["refresh_token"] = refresh_token
-                request.session["role"] = role
+                request.session["access_token"] = data.get("access")
+                request.session["refresh_token"] = data.get("refresh")
+                request.session["role"] = data.get("role")
 
                 messages.success(request, f"Bienvenue {username} 👋")
 
-                # Redirection selon le rôle
-                if role == "admin":
-                    return redirect("admin_dashboard")
-                elif role == "doctor":
-                    return redirect("doctor_dashboard")
-                elif role == "patient":
-                    return redirect("patient_dashboard")
-                else:
-                    messages.error(request, "Rôle utilisateur inconnu ❌")
-                    return redirect("login")
-
+                return redirect(f"{data.get('role')}_dashboard")
             else:
-                # Erreur de connexion (identifiants invalides)
                 messages.error(request, "Nom d’utilisateur ou mot de passe invalide ❌")
-                return redirect("login")
-
         except requests.exceptions.ConnectionError:
             messages.error(request, "Erreur de connexion au serveur backend 🚫")
-            return redirect("login")
 
-    # Si simple affichage du formulaire
     return render(request, "login.html")
+
+
 # ===============================
 # 🚪 Déconnexion
 # ===============================
 def logout_user(request):
     request.session.flush()
-    messages.success(request, "Vous êtes déconnecté avec succès 👋")
+    messages.success(request, "Déconnexion réussie 👋")
     return redirect("login")
 
 
 # ===============================
-# 🩺 Interface Médecin
+# 🩺 Dashboard Médecin
 # ===============================
 def doctor_dashboard(request):
     role = request.session.get("role")
     username = request.session.get("username")
     access_token = request.session.get("access_token")
 
-    # 1. Vérification de l'authentification et du rôle
     if role != "doctor" or not access_token:
-        messages.error(request, "Accès non autorisé. Veuillez vous connecter en tant que médecin.")
+        messages.error(request, "Accès non autorisé.")
         return redirect("login")
 
-    # 2. Définition des Headers d'autorisation pour l'API Backend
-    headers = {
-        "Authorization": f"Bearer {access_token}"
-    }
+    headers = {"Authorization": f"Bearer {access_token}"}
+    stats, schedule, alerts, weekly_performance_data = {}, [], [], []
 
-    # 3. Récupération des données du Dashboard
     try:
-        # --- A. Statistiques principales ---
-        # Remplacez ceci par un appel API réel pour les statistiques du Dr.
-        # response_stats = requests.get(API_BASE + f"doctors/{username}/stats/", headers=headers)
-        # stats = response_stats.json()
-        
-        # Données SIMULÉES (à remplacer) :
-        stats = {
-            'total_patients': 78,
-            'today_appointments': 5,
-            'new_reports': 2,
-            'new_patients': 3,
-            'doctor_name': "Dr. Taher Zaied", # Assurez-vous d'avoir le nom complet
-            'doctor_specialization': "Internal Medicine"
-        }
+        resp_stats = requests.get(f"{API_BASE}doctors/{username}/stats/", headers=headers)
+        stats = resp_stats.json() if resp_stats.status_code == 200 else {}
 
+        resp_schedule = requests.get(f"{API_BASE}doctors/{username}/appointments/today/", headers=headers)
+        schedule = resp_schedule.json() if resp_schedule.status_code == 200 else []
 
-        # --- B. Rendez-vous du Jour ---
-        # Remplacez ceci par un appel API réel :
-        # response_schedule = requests.get(API_BASE + f"doctors/{username}/appointments/today/", headers=headers)
-        # schedule = response_schedule.json()
-        
-        # Données SIMULÉES (à remplacer) :
-        schedule = [
-            {'time': '09:00 AM', 'name': 'Khalid Al-Ghamdi', 'status': 'Confirmed'},
-            {'time': '09:30 AM', 'name': 'Fatima Al-Zahrani', 'status': 'Confirmed'},
-            {'time': '10:30 AM', 'name': 'Sarah Abdullah', 'status': 'Confirmed'},
-        ]
-        
-        # --- C. Alertes Critiques ---
-        # Remplacez ceci par un appel API réel :
-        # response_alerts = requests.get(API_BASE + "alerts/", headers=headers)
-        # alerts = response_alerts.json()
-        
-        # Données SIMULÉES (à remplacer) :
-        alerts = [
-            {'type': 'Potassium level', 'patient': 'Sarah Abdullah', 'value': '5.2 mEq/L', 'time': '10:30 AM', 'drug': 'N/A'},
-            {'type': 'Drug Interaction', 'patient': 'Waleed Al-Ghamdi', 'value': 'Potential serious drug interaction', 'time': '09:15 AM', 'drug': 'Warfarin and Aspirin'},
-        ]
-        
-        # --- D. Données pour le Graphique de Performance ---
-        # Données SIMULÉES (à remplacer par des données structurées) :
-        weekly_performance_data = [
-            {'day': 'Sat', 'patients': 13},
-            {'day': 'Sun', 'patients': 19},
-            {'day': 'Mon', 'patients': 15},
-            {'day': 'Tue', 'patients': 21},
-            {'day': 'Wed', 'patients': 18},
-            {'day': 'Thu', 'patients': 24},
-            {'day': 'Fri', 'patients': 16},
-        ]
+        resp_alerts = requests.get(f"{API_BASE}doctors/{username}/alerts/", headers=headers)
+        alerts = resp_alerts.json() if resp_alerts.status_code == 200 else []
+
+        resp_perf = requests.get(f"{API_BASE}doctors/{username}/weekly-performance/", headers=headers)
+        weekly_performance_data = resp_perf.json() if resp_perf.status_code == 200 else []
 
     except requests.exceptions.RequestException:
-        messages.warning(request, "Erreur de connexion au serveur backend. Certaines données peuvent être manquantes.")
-        # Utiliser des listes/dictionnaires vides en cas d'erreur
-        stats = {}
-        schedule = []
-        alerts = []
-        weekly_performance_data = []
+        messages.warning(request, "Erreur de connexion au backend.")
 
-
-    # 4. Préparation du contexte pour le template
-    context = {
+    return render(request, "dashboards/doctor_dashboard.html", {
         "username": username,
         "stats": stats,
         "schedule": schedule,
         "alerts": alerts,
         "weekly_performance_data": weekly_performance_data,
-    }
-    
-    return render(request, "dashboards/doctor_dashboard.html", context)
+    })
 
 
+# ===============================
+# 🧑‍⚕️ Dashboard Patient
+# ===============================
 def patient_dashboard(request):
     role = request.session.get("role")
-    if role != "patient":
-        return redirect("login")
     username = request.session.get("username")
-    
-    # ... Logique de récupération des données patient ...
-    return render(request, "dashboards/patient_dashboard.html", {"username": username})
+    access_token = request.session.get("access_token")
 
+    if role != "patient" or not access_token:
+        messages.error(request, "Accès refusé. Connectez-vous comme patient.")
+        return redirect("login")
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    doctors = []
+
+    try:
+        response = requests.get(API_BASE + "users/doctor-list/", headers=headers)
+        if response.status_code == 200:
+            doctors = response.json()
+        else:
+            messages.error(request, f"Erreur : {response.status_code}")
+    except requests.exceptions.RequestException:
+        messages.error(request, "Erreur de communication avec le serveur.")
+
+    return render(request, "dashboards/patient_dashboard.html", {
+        "username": username,
+        "doctors": doctors,
+    })
+
+
+# ===============================
+# 🩺 Réserver un rendez-vous
+# ===============================
+def book_appointment_view(request, doctor_id):
+    role = request.session.get("role")
+    access_token = request.session.get("access_token")
+
+    if role != "patient" or not access_token:
+        messages.error(request, "Connectez-vous comme patient.")
+        return redirect("login")
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    doctor_details = {"id": doctor_id, "full_name": f"Docteur {doctor_id}", "specialization": "Médecin généraliste"}
+
+    if request.method == "POST":
+        appointment_data = {
+            "doctor": doctor_id,
+            "date": request.POST.get("date"),
+            "time": request.POST.get("time"),
+            "reason": request.POST.get("reason"),
+        }
+
+        try:
+            response_booking = requests.post(API_BASE + "users/appointments/create/", json=appointment_data, headers=headers)
+            if response_booking.status_code == 201:
+                messages.success(request, "Rendez-vous réservé avec succès ✅")
+                return redirect("patient_dashboard")
+            else:
+                messages.error(request, f"Erreur : {response_booking.json()}")
+        except requests.exceptions.RequestException:
+            messages.error(request, "Erreur réseau lors de la réservation.")
+
+    return render(request, "book_appointment.html", {"doctor": doctor_details})
+
+
+# ===============================
+# 🧑‍💼 Dashboard Admin
+# ===============================
 def admin_dashboard(request):
     role = request.session.get("role")
     if role != "admin":
         return redirect("login")
-    username = request.session.get("username")
-    
-    # ... Logique de récupération des données admin ...
-    return render(request, "dashboards/admin_dashboard.html", {"username": username})
 
-def book_appointment_page(request, doctor_id):
-    role = request.session.get("role")
     username = request.session.get("username")
-    access_token = request.session.get("access_token")
+    today = timezone.localdate()
 
-    # 1. Vérification du rôle
-    if role != "patient" or not access_token:
-        messages.error(request, "Accès non autorisé. Veuillez vous connecter en tant que patient.")
+    total_patients = User.objects.filter(role='patient').count()
+    total_doctors = User.objects.filter(role='doctor').count()
+    appointments_today = Appointment.objects.filter(date=today).count()
+
+    recent_appointments = Appointment.objects.select_related('doctor', 'patient').order_by('-created_at')[:10]
+
+    context = {
+        "username": username,
+        "total_patients": total_patients,
+        "total_doctors": total_doctors,
+        "appointments_today": appointments_today,
+        "recent_appointments": recent_appointments,
+        "today": today,
+    }
+    return render(request, "dashboards/admin_dashboard.html", context)
+
+
+# ===============================
+# 🧩 Gestion des utilisateurs (Admin)
+# ===============================
+def admin_add_user(request):
+    if request.session.get("role") != "admin":
+        messages.error(request, "Accès refusé.")
         return redirect("login")
 
-    headers = {
-        "Authorization": f"Bearer {access_token}"
-    }
-
-    doctor_details = None
-    
-    # 2. Récupération des détails du docteur via l'API
-    try:
-        # Supposons que vous avez un endpoint dans l'API pour obtenir les détails d'un docteur par son ID.
-        # Ex: GET /api/users/doctor-details/1/
-        response = requests.get(API_BASE + f"users/doctor-details/{doctor_id}/", headers=headers)
-        
-        if response.status_code == 200:
-            doctor_details = response.json()
-        else:
-            messages.error(request, "Impossible de trouver les détails de ce docteur.")
-            # Redirection vers le dashboard si le docteur n'est pas trouvé
-            return redirect("patient_dashboard") 
-
-    except requests.exceptions.RequestException:
-        messages.error(request, "Erreur de connexion au serveur backend lors de la récupération des détails du docteur.")
-        return redirect("patient_dashboard")
-
-    # 3. Traitement du formulaire de réservation (méthode POST)
     if request.method == "POST":
-        appointment_date = request.POST.get("appointment_date")
-        appointment_time = request.POST.get("appointment_time")
-        reason = request.POST.get("reason")
-        
-        # Exemple de données à envoyer à l'API de réservation
-        appointment_data = {
-            "doctor_id": doctor_id,
-            "patient_username": username,
-            "date": appointment_date,
-            "time": appointment_time,
-            "reason": reason
+        user_type = request.POST.get("user_type")
+        data = {
+            "username": request.POST.get("username"),
+            "email": request.POST.get("email"),
+            "password": request.POST.get("password"),
+            "full_name": request.POST.get("full_name"),
+            "age": request.POST.get("age"),
+            "phone": request.POST.get("phone"),
+            "address": request.POST.get("address"),
         }
 
-        try:
-            # Supposons un endpoint API pour créer un rendez-vous
-            response_booking = requests.post(API_BASE + "appointments/create/", json=appointment_data, headers=headers)
-            
-            if response_booking.status_code == 201:
-                messages.success(request, "Rendez-vous réservé avec succès !")
-                # Redirection vers la liste des rendez-vous du patient
-                return redirect("patient_dashboard") 
-            else:
-                error_message = response_booking.json().get("detail", "Erreur lors de la réservation.")
-                messages.error(request, error_message)
+        if user_type == "patient":
+            serializer = PatientRegisterSerializer(data=data)
+        elif user_type == "doctor":
+            data["specialization"] = request.POST.get("specialization")
+            data["experience_years"] = request.POST.get("experience_years")
+            data["description"] = request.POST.get("description", "")
+            serializer = DoctorRegisterSerializer(data=data)
+        else:
+            messages.error(request, "Type invalide.")
+            return redirect("admin_add_user")
 
-        except requests.exceptions.RequestException:
-            messages.error(request, "Erreur de communication avec le serveur lors de la réservation.")
-            
-    # 4. Affichage de la page (méthode GET ou après échec du POST)
-    context = {
-        "username": username,
-        "doctor": doctor_details,
-        "doctor_id": doctor_id,
-    }
-    
-    # Assurez-vous d'avoir un template 'book_appointment.html'
-    return render(request, "appointment/book_appointment.html", context)
+        if serializer.is_valid():
+            serializer.save()
+            messages.success(request, f"Compte {user_type} créé ✅")
+            return redirect("admin_dashboard")
+        else:
+            messages.error(request, f"Erreur : {serializer.errors}")
+
+    return render(request, "admin_add_user.html")
 
 
-def patient_dashboard(request):
-    """
-    Affiche le tableau de bord du patient et charge la liste des docteurs via l'API.
-    """
-    # Récupération des données de session (utilisés après la connexion)
-    role = request.session.get("role")
-    username = request.session.get("username")
-    access_token = request.session.get("access_token")
-
-    # Vérification de l'authentification et du rôle
-    if role != "patient" or not access_token:
-        messages.error(request, "Accès refusé. Veuillez vous connecter en tant que patient.")
+# ===============================
+# 👥 Liste des patients et docteurs
+# ===============================
+def list_patients(request):
+    if request.session.get("role") != "admin":
+        messages.error(request, "Accès refusé.")
         return redirect("login")
 
-    # Configuration pour l'appel API
-    headers = {
-        "Authorization": f"Bearer {access_token}"
-    }
-    
-    doctors = []
-    
-    # 💥 LOGIQUE CLÉ : Appel à l'API du Backend pour les docteurs 💥
-    try:
-        # L'URL doit correspondre exactement à celle du backend DRF
-        response = requests.get(API_BASE + "users/doctor-list/", headers=headers)
-        
-        if response.status_code == 200:
-            # L'API a réussi. Les données sont la liste des docteurs.
-            doctors = response.json()
-        elif response.status_code == 403:
-            # Problème de permission (si vous avez oublié de mettre IsAuthenticated)
-            messages.error(request, "Erreur de permission: vous n'êtes pas autorisé à voir cette liste.")
-        else:
-            # Gérer les autres erreurs HTTP
-            messages.error(request, f"Erreur lors du chargement des docteurs: {response.status_code}")
-            
-    except requests.exceptions.RequestException as e:
-        # Gérer les erreurs de connexion réseau (backend éteint, etc.)
-        messages.error(request, f"Erreur de connexion au serveur API: {e}")
-    
-    
-    context = {
-        "username": username,
-        "doctors": doctors, # 👈 Les données des docteurs sont passées au template
-    }
+    patients = User.objects.filter(role="patient")
+    return render(request, "admin_patients_list.html", {"patients": patients})
 
-    return render(request, "dashboards/patient_dashboard.html", context)
+
+def list_doctors(request):
+    if request.session.get("role") != "admin":
+        messages.error(request, "Accès refusé.")
+        return redirect("login")
+
+    doctors = User.objects.filter(role="doctor")
+    return render(request, "admin_doctors_list.html", {"doctors": doctors})
+
+
+# ===============================
+# 👤 Profil utilisateur
+# ===============================
+def profile_info(request):
+    username = request.session.get("username")
+    role = request.session.get("role")
+    access_token = request.session.get("access_token")
+
+    if not access_token:
+        messages.error(request, "Veuillez vous connecter.")
+        return redirect("login")
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    try:
+        response = requests.get(API_BASE + f"users/profile/{username}/", headers=headers)
+        user_data = response.json() if response.status_code == 200 else {}
+    except requests.exceptions.RequestException:
+        user_data = {}
+
+    return render(request, "profile_info.html", {"user_data": user_data})

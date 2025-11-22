@@ -5,70 +5,88 @@
   <meta charset="UTF-8">
   <title>Hospital Management System</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" href="https://placehold.co/32x32/00b894/ffffff.png?text=H">
+  <link rel="icon" href="https://placehold.co/32x32/10B981/ffffff.png?text=H">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvO9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
 
   <!-- 🌐 NAVBAR -->
   <nav class="bg-white shadow-md fixed top-0 w-full z-10">
     <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-      <h1 class="text-2xl font-bold text-green-600">HMS</h1>
+      <h1 class="text-2xl font-extrabold text-emerald-600 flex items-center space-x-2">
+        <i class="fa-solid fa-hospital text-3xl"></i>
+        <span>HMS</span>
+      </h1>
       <div class="space-x-4">
-        <a href="{% url 'login' %}" class="text-gray-600 hover:text-green-600 font-semibold">Connexion</a>
-        <a href="{% url 'register' %}" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold">Inscription</a>
+        <a href="{% url 'login' %}" class="text-gray-600 hover:text-emerald-600 font-semibold transition duration-150 ease-in-out">
+          <i class="fa-solid fa-right-to-bracket mr-1"></i> Connexion
+        </a>
+        <a href="{% url 'register' %}" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-semibold transition duration-150 ease-in-out shadow-md">
+          <i class="fa-solid fa-user-plus mr-1"></i> Inscription
+        </a>
       </div>
     </div>
   </nav>
 
   <!-- 🏥 HERO SECTION -->
-  <header class="flex flex-col lg:flex-row items-center justify-between container mx-auto px-6 mt-24">
+  <header class="flex flex-col lg:flex-row items-center justify-between container mx-auto px-6 mt-32 mb-16">
     <div class="lg:w-1/2 text-center lg:text-left">
-      <h2 class="text-4xl font-bold text-green-600 mb-4">Votre santé, notre priorité 💚</h2>
+      <h2 class="text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
+        Votre santé, notre <span class="text-emerald-600">priorité</span>
+      </h2>
       <p class="text-lg text-gray-600 mb-6">
         Bienvenue sur la plateforme HMS — un système moderne de gestion hospitalière
         conçu pour simplifier la vie des patients, médecins et administrateurs.
       </p>
       <div class="space-x-4">
-        <a href="{% url 'login' %}" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold">
-          Se connecter
+<a href="{% url 'login' %}" class="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-xl font-bold text-lg transition duration-150 ease-in-out shadow-lg hover:shadow-xl flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          <span>Se connecter</span>
         </a>
-        <a href="{% url 'register' %}" class="border border-green-500 text-green-600 hover:bg-green-50 px-6 py-3 rounded-lg font-semibold">
-          Créer un compte
+<a href="{% url 'register' %}" class="border border-emerald-600 text-emerald-600 hover:bg-emerald-50 px-8 py-4 rounded-xl font-bold text-lg transition duration-150 ease-in-out flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-user-plus"></i>
+          <span>Créer un compte</span>
         </a>
       </div>
     </div>
 
     <div class="lg:w-1/2 mt-10 lg:mt-0">
-      <img src="https://placehold.co/600x400/00b894/ffffff.png?text=Hospital+Management+System"
+<img src="{% static 'images/logo.png' %}"
            alt="Illustration hôpital"
-           class="rounded-2xl shadow-lg">
+           class="rounded-3xl shadow-2xl border-4 border-white">
     </div>
   </header>
 
   <!-- 💡 SERVICES -->
   <section class="container mx-auto px-6 py-16">
-    <h3 class="text-3xl font-bold text-center text-gray-800 mb-12">Nos fonctionnalités principales</h3>
+    <h3 class="text-4xl font-extrabold text-gray-800 text-center mb-16">Nos fonctionnalités principales</h3>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
 
       <div class="bg-white p-8 rounded-2xl shadow-md hover:shadow-lg transition">
-        <div class="text-green-500 text-4xl mb-4 text-center">🩺</div>
-        <h4 class="text-xl font-semibold text-center mb-2">Gestion des patients</h4>
+        <div class="text-emerald-500 text-5xl mb-4 text-center">
+          <i class="fa-solid fa-user-injured"></i>
+        </div>
+        <h4 class="text-2xl font-bold text-center mb-2 text-gray-900">Gestion des patients</h4>
         <p class="text-gray-600 text-center">
           Les médecins peuvent consulter les profils, historiques médicaux et rendez-vous de leurs patients.
         </p>
       </div>
 
       <div class="bg-white p-8 rounded-2xl shadow-md hover:shadow-lg transition">
-        <div class="text-blue-500 text-4xl mb-4 text-center">📅</div>
-        <h4 class="text-xl font-semibold text-center mb-2">Rendez-vous en ligne</h4>
+        <div class="text-blue-500 text-5xl mb-4 text-center">
+          <i class="fa-solid fa-calendar-check"></i>
+        </div>
+        <h4 class="text-2xl font-bold text-center mb-2 text-gray-900">Rendez-vous en ligne</h4>
         <p class="text-gray-600 text-center">
           Les patients peuvent prendre rendez-vous facilement avec un docteur disponible.
         </p>
       </div>
 
       <div class="bg-white p-8 rounded-2xl shadow-md hover:shadow-lg transition">
-        <div class="text-purple-500 text-4xl mb-4 text-center">📊</div>
-        <h4 class="text-xl font-semibold text-center mb-2">Tableaux de bord dynamiques</h4>
+        <div class="text-purple-500 text-5xl mb-4 text-center">
+          <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <h4 class="text-2xl font-bold text-center mb-2 text-gray-900">Tableaux de bord dynamiques</h4>
         <p class="text-gray-600 text-center">
           Des interfaces dédiées pour chaque rôle : admin, médecin, ou patient.
         </p>
@@ -78,9 +96,9 @@
   </section>
 
   <!-- 🧾 FOOTER -->
-  <footer class="bg-white border-t border-gray-200 py-6 mt-auto">
+  <footer class="bg-white border-t border-gray-200 py-8 mt-auto shadow-inner">
     <div class="container mx-auto text-center text-gray-500 text-sm">
-      © 2025 HMS — Tous droits réservés.
+      © 2025 HMS — Tous droits réservés. Développé avec ❤ et Tailwind CSS.
     </div>
   </footer>
 
