@@ -23,7 +23,6 @@ urlpatterns = [
 
     path('dashboard/', views.patient_dashboard, name='patient_dashboard'),
     path('book-appointment/<int:doctor_id>/', views.book_appointment_view, name='book_appointment'),
-    path('appointments/<int:id>/edit/', views.edit_appointment_view, name='edit_appointment'),
     path('appointments/<int:id>/delete/', views.delete_appointment_view, name='delete_appointment'),
 
 ]

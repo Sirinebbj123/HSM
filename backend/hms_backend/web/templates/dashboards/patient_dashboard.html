@@ -1,9 +1,19 @@
 {% extends 'base.html' %}
 
 {% block title %}Dashboard Patient{% endblock %}
-
 {% block header %}Tableau de bord Patient{% endblock %}
 
+{% block messages %}
+    {% if messages %}
+        <div class="fixed top-4 right-4 z-50">
+            {% for message in messages %}
+                <div class="bg-{{ message.tags }} text-white px-6 py-3 rounded-lg shadow-lg mb-2 animate-fade-in">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}
 {% block sidebar %}
     <a href="{% url 'patient_dashboard' %}" class="flex items-center space-x-3 p-3 rounded-lg text-white bg-emerald-600 font-semibold shadow-md transition duration-150 ease-in-out">
         <i class="fa-solid fa-gauge-high w-5 h-5"></i>
@@ -60,7 +70,7 @@
         </a>
     </div>
 
-<!-- 🟢 Mes Rendez-vous -->
+<!-- Mes Rendez-vous -->
 <div id="appointments-list" class="mt-12 bg-white p-8 rounded-2xl shadow-xl">
     <h2 class="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-3 flex items-center">
         <i class="fa-solid fa-calendar-check text-blue-500 mr-3"></i> Mes Rendez-vous
@@ -81,18 +91,41 @@
                 </thead>
                 <tbody>
                     {% for appt in appointments %}
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-50" data-doctor-id="{{ appt.doctor }}">
                             <td class="py-2 px-4 border-b">{{ appt.doctor_name }}</td>
-                            <td class="py-2 px-4 border-b">{{ appt.date }}</td>
-                            <td class="py-2 px-4 border-b">{{ appt.time }}</td>
-                            <td class="py-2 px-4 border-b">{{ appt.reason }}</td>
-                            <td class="py-2 px-4 border-b font-semibold">{{ appt.status }}</td>
                             <td class="py-2 px-4 border-b">
-                                <a href="{% url 'edit_appointment' appt.id %}" class="text-indigo-600 hover:underline">Modifier</a>                                <form action="{% url 'delete_appointment' appt.id %}" method="post" class="inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="text-red-600 hover:underline"
-                                            onclick="return confirm('Supprimer ce rendez-vous ?')">Supprimer</button>
-                                </form>
+                                <span id="date-{{ appt.id }}">{{ appt.date }}</span>
+                                <input type="date" id="date-input-{{ appt.id }}" value="{{ appt.date }}" style="display:none;" class="form-input">
+                            </td>
+                            <td class="py-2 px-4 border-b">
+                                <span id="time-{{ appt.id }}">{{ appt.time }}</span>
+                                <input type="time" id="time-input-{{ appt.id }}" value="{{ appt.time }}" style="display:none;" class="form-input">
+                            </td>
+                            <td class="py-2 px-4 border-b">
+                                <span id="reason-{{ appt.id }}">{{ appt.reason }}</span>
+                                <textarea id="reason-input-{{ appt.id }}" style="display:none;" class="form-input">{{ appt.reason }}</textarea>
+                            </td>
+                            <td class="py-2 px-4 border-b font-semibold">
+                                {% if appt.status == 'PENDING' %}
+                                    <span class="text-yellow-600">En attente</span>
+                                {% elif appt.status == 'CONFIRMED' %}
+                                    <span class="text-green-600">Confirmé</span>
+                                {% elif appt.status == 'CANCELLED' %}
+                                    <span class="text-red-600">Annulé</span>
+                                {% elif appt.status == 'COMPLETED' %}
+                                    <span class="text-gray-600">Terminé</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-2 px-4 border-b">
+                                {% if appt.status == 'PENDING' %}
+                                    <button onclick="toggleEdit({{ appt.id }})" class="text-indigo-600 hover:underline mr-2">Modifier</button>
+                                    <button id="save-btn-{{ appt.id }}" onclick="saveAppointment({{ appt.id }})" style="display:none;" class="text-green-600 hover:underline mr-2">Sauver</button>
+                                    <button type="button" class="text-red-600 hover:underline" onclick="deleteAppointment({{ appt.id }})">
+    Supprimer
+</button>
+                                {% else %}
+                                    <span class="text-gray-500">Non modifiable</span>
+                                {% endif %}
                             </td>
                         </tr>
                     {% endfor %}
@@ -104,12 +137,11 @@
     {% endif %}
 </div>
 
-    <!-- 🩺 Liste des docteurs -->
+    <!-- Docteurs -->
     <div id="doctors-list" class="mt-12 bg-white p-8 rounded-2xl shadow-xl">
         <h2 class="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-3 flex items-center">
             <i class="fa-solid fa-stethoscope text-purple-500 mr-3"></i> Docteurs disponibles
         </h2>
-
         {% if doctors %}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for doctor in doctors %}
@@ -123,7 +155,6 @@
                                 <p class="text-sm text-purple-600 font-medium mt-0.5">{{ doctor.specialization }}</p>
                             </div>
                         </div>
-
                         <div class="space-y-2 text-sm text-gray-700 mt-2 flex-grow">
                             <p class="flex items-center"><i class="fa-solid fa-clock-rotate-left w-4 h-4 text-gray-400 mr-2"></i> <span class="font-semibold text-gray-500">Expérience:</span> {{ doctor.experience_years }} ans</p>
                             <p class="flex items-center"><i class="fa-solid fa-phone w-4 h-4 text-gray-400 mr-2"></i> <span class="font-semibold text-gray-500">Contact:</span> {{ doctor.phone }}</p>
@@ -133,9 +164,7 @@
                                 {{ doctor.description|default:"(Aucune description fournie)"|truncatechars:80 }}
                             </p>
                         </div>
-
-                        <a href="{% url 'book_appointment' doctor_id=doctor.id %}" 
-                           class="mt-6 w-full text-center bg-indigo-600 text-white px-4 py-3 rounded-xl text-base font-semibold hover:bg-indigo-700 transition shadow-lg flex items-center justify-center space-x-2">
+                        <a href="{% url 'book_appointment' doctor_id=doctor.id %}" class="mt-6 w-full text-center bg-indigo-600 text-white px-4 py-3 rounded-xl text-base font-semibold hover:bg-indigo-700 transition shadow-lg flex items-center justify-center space-x-2">
                             <i class="fa-solid fa-calendar-plus"></i>
                             <span>Prendre Rendez-vous</span>
                         </a>
@@ -151,5 +180,68 @@
     </div>
 </div>
 
+<script>
+function toggleEdit(id) {
+    document.getElementById(`date-${id}`).style.display = 'none';
+    document.getElementById(`date-input-${id}`).style.display = 'inline';
+    document.getElementById(`time-${id}`).style.display = 'none';
+    document.getElementById(`time-input-${id}`).style.display = 'inline';
+    document.getElementById(`reason-${id}`).style.display = 'none';
+    document.getElementById(`reason-input-${id}`).style.display = 'inline';
+    document.querySelector(`button[onclick="toggleEdit(${id})"]`).style.display = 'none';
+    document.getElementById(`save-btn-${id}`).style.display = 'inline';
+}
 
+async function saveAppointment(id) {
+    // Récupérer les données du rendez-vous depuis l'élément HTML
+    const appointmentRow = document.querySelector(`tr:has(#date-${id})`);
+    const doctorId = appointmentRow.getAttribute('data-doctor-id');
+    
+    const payload = {
+        doctor: parseInt(doctorId),
+        date: document.getElementById(`date-input-${id}`).value,
+        time: document.getElementById(`time-input-${id}`).value,
+        reason: document.getElementById(`reason-input-${id}`).value,
+    };
+
+    try {
+        const res = await fetch(`/api/users/appointments/${id}/update/`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Authorization': 'Bearer {{ access_token }}'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            alert("Rendez-vous modifié avec succès ✅");
+            location.reload();
+        } else {
+            const errorData = await res.json();
+            alert(`Erreur : ${errorData.error || 'Erreur lors de la modification'}`);
+        }
+    } catch (error) {
+        alert("Erreur réseau lors de la modification");
+    }
+}
+</script>
+<script>
+async function deleteAppointment(id) {
+    if(!confirm("Supprimer ce rendez-vous ?")) return;
+    const res = await fetch(`/api/users/appointments/${id}/delete/`, {
+        method: "DELETE",
+        headers: {
+            "Authorization": "Bearer {{ request.session.access_token }}",
+        },
+    });
+    if(res.ok) {
+        alert("Rendez-vous supprimé ✅");
+        location.reload();
+    } else {
+        alert("Impossible de supprimer.");
+    }
+}
+</script>
 {% endblock %}

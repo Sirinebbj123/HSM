@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 import requests
@@ -325,60 +325,15 @@ def profile_info(request):
 
     return render(request, "profile_info.html", {"user_data": user_data})
 
-
-
-def edit_appointment_view(request, id):
-    print("🔍 edit_appointment_view appelé avec id =", id)
-
-    if request.session.get("role") != "patient":
-        messages.error(request, "Accès interdit.")
-        return redirect("login")
-
-    headers = {"Authorization": f"Bearer {request.session['access_token']}"}
-
-    # 👉 Récupérer les détails du rendez-vous
-    url_detail = f"{API_BASE}appointments/{id}/"
-    response = requests.get(url_detail, headers=headers)
-
-    if response.status_code != 200:
-        messages.error(request, "Rendez-vous introuvable.")
-        return redirect("patient_dashboard")
-
-    appointment = response.json()
-
-    if request.method == "POST":
-        data = {
-            "doctor": appointment["doctor"],  # on garde le même docteur
-            "date": request.POST["date"],
-            "time": request.POST["time"],
-            "reason": request.POST["reason"],
-        }
-
-        # 👉 Envoyer un PATCH à l’API
-        resp = requests.patch(
-            f"{API_BASE}appointments/{id}/update/",
-            json=data,
-            headers=headers,
-        )
-
-        if resp.status_code == 200:
-            messages.success(request, "Rendez-vous modifié ✅")
-            return redirect("patient_dashboard")
-        else:
-            messages.error(request, "Erreur lors de la modification.")
-
-    return render(request, "edit_appointment.html", {"appointment": appointment})
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import redirect, get_object_or_404
 
 @login_required
 def delete_appointment_view(request, id):
-    if request.session.get("role") != "patient":
-        messages.error(request, "Accès interdit.")
-        return redirect("login")
-
-    headers = {"Authorization": f"Bearer {request.session['access_token']}"}
-    resp = requests.delete(f"{API_BASE}users/appointments/{id}/delete/", headers=headers)
-    if resp.status_code == 204:
-        messages.success(request, "Rendez-vous annulé ✅")
-    else:
-        messages.error(request, "Impossible de supprimer.")
+    if request.method == "POST":
+        appointment = get_object_or_404(Appointment, id=id)
+        if request.user.role != "patient" or appointment.patient.user != request.user:
+            raise PermissionDenied("Vous ne pouvez supprimer que vos propres rendez-vous.")
+        appointment.delete()
+        messages.success(request, "Rendez-vous supprimé avec succès ✅")
     return redirect("patient_dashboard")

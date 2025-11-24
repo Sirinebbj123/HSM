@@ -220,10 +220,44 @@ class PatientAppointmentUpdateView(generics.UpdateAPIView):
     def get_object(self):
         appointment = get_object_or_404(Appointment, id=self.kwargs['id'])
         user = self.request.user
+        
+        # Sécurité : seul le patient propriétaire peut modifier
         if user.role != 'patient' or appointment.patient.user != user:
             raise PermissionDenied("Vous ne pouvez modifier que vos propres rendez-vous.")
+        
+        # Ne pas permettre la modification si le RDV n'est plus en attente
+        if appointment.status != 'PENDING':
+            raise PermissionDenied("Ce rendez-vous ne peut plus être modifié.")
+            
         return appointment
 
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        
+        # Vérifier les conflits d'horaire
+        doctor = request.data.get('doctor', instance.doctor.id)
+        date = request.data.get('date', instance.date)
+        time = request.data.get('time', instance.time)
+        
+        if Appointment.objects.filter(
+            doctor_id=doctor, 
+            date=date, 
+            time=time
+        ).exclude(id=instance.id).exists():
+            return Response(
+                {"error": "Ce créneau est déjà réservé pour ce docteur."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        return Response({
+            "message": "Rendez-vous modifié avec succès",
+            "appointment": serializer.data
+        })
 
 # ------------------------------
 # 🗑️  Patient : supprimer son RDV
