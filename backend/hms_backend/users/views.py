@@ -1,6 +1,10 @@
-from django.shortcuts import render
+from pyexpat.errors import messages
+from django.shortcuts import redirect, render
+import requests
 from rest_framework import generics
 from rest_framework import status
+
+from web.views import API_BASE
 from .models import User, Doctor, Patient , Appointment
 from .serializers import RegisterSerializer,PatientRegisterSerializer,AdminRegisterSerializer, DoctorRegisterSerializer, DoctorListSerializer, DoctorUpdateSerializer,PatientListSerializer, PatientUpdateSerializer,AppointmentSerializer
 from rest_framework.permissions import AllowAny
@@ -9,11 +13,26 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404
+
 class ProtectedView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
         return Response({"message": "Bienvenue " + request.user.username})
     
+    
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, username):
+        user = get_object_or_404(User, username=username)
+        return Response({
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
+        })
+        
 def home(request):
     return render(request, 'home.html')  # Assurez-vous que 'home.html' existe
     
@@ -147,6 +166,7 @@ class PatientAppointmentListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        print("🔎 PatientAppointmentListView appelé avec id =", self.kwargs['id'])
         patient_id = self.kwargs['id']  # Récupère l’ID depuis l’URL
         try:
             patient = Patient.objects.get(id=patient_id)
@@ -184,4 +204,84 @@ class MyDoctorAppointmentsView(generics.ListAPIView):
         doctor = user.doctor_profile
 
         # 🔍 Retourne tous les rendez-vous liés à ce docteur
-        return Appointment.objects.filter(doctor=doctor).order_by('-date', '-time')       
+        return Appointment.objects.filter(doctor=doctor).order_by('-date', '-time')    
+
+
+
+# ------------------------------
+# 📝 Patient : modifier son RDV
+# ------------------------------
+class PatientAppointmentUpdateView(generics.UpdateAPIView):
+    queryset = Appointment.objects.all()
+    serializer_class = AppointmentSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+
+    def get_object(self):
+        appointment = get_object_or_404(Appointment, id=self.kwargs['id'])
+        user = self.request.user
+        if user.role != 'patient' or appointment.patient.user != user:
+            raise PermissionDenied("Vous ne pouvez modifier que vos propres rendez-vous.")
+        return appointment
+
+
+# ------------------------------
+# 🗑️  Patient : supprimer son RDV
+# ------------------------------
+class PatientAppointmentDeleteView(generics.DestroyAPIView):
+    queryset = Appointment.objects.all()
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+
+    def get_object(self):
+        appointment = get_object_or_404(Appointment, id=self.kwargs['id'])
+        user = self.request.user
+        if user.role != 'patient' or appointment.patient.user != user:
+            raise PermissionDenied("Vous ne pouvez supprimer que vos propres rendez-vous.")
+        return appointment    
+
+
+class AppointmentDetailView(generics.RetrieveAPIView):
+    queryset = Appointment.objects.all()
+    serializer_class = AppointmentSerializer
+    lookup_field = 'id'
+
+
+def edit_appointment_view(request, id):
+    print("🔍 edit_appointment_view appelé avec id =", id)
+
+    if request.session.get("role") != "patient":
+        messages.error(request, "Accès interdit.")
+        return redirect("login")
+
+    headers = {"Authorization": f"Bearer {request.session['access_token']}"}
+
+    # 1️⃣ Récupérer les données actuelles du RDV
+    url_detail = f"{API_BASE}appointments/{id}/"
+    response = requests.get(url_detail, headers=headers)
+    if response.status_code != 200:
+        messages.error(request, "Rendez-vous introuvable.")
+        return redirect("patient_dashboard")
+    appointment = response.json()
+
+    # 2️⃣ Soumission du formulaire
+    if request.method == "POST":
+        payload = {
+            "doctor": appointment["doctor"],  # inchangé
+            "date": request.POST["date"],
+            "time": request.POST["time"],
+            "reason": request.POST["reason"],
+        }
+        resp = requests.patch(
+            f"{API_BASE}appointments/{id}/update/",
+            json=payload,
+            headers=headers,
+        )
+        if resp.status_code == 200:
+            messages.success(request, "Rendez-vous modifié ✅")
+            return redirect("patient_dashboard")
+        else:
+            messages.error(request, "Erreur lors de la modification.")
+
+    # 3️⃣ Affichage du formulaire pré-rempli
+    return render(request, "edit_appointment.html", {"appointment": appointment})    

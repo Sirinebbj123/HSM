@@ -143,19 +143,39 @@ def patient_dashboard(request):
 
     headers = {"Authorization": f"Bearer {access_token}"}
     doctors = []
+    appointments = []
+    user_data = None
+    patient_id = None
 
     try:
-        response = requests.get(API_BASE + "users/doctor-list/", headers=headers)
-        if response.status_code == 200:
-            doctors = response.json()
-        else:
-            messages.error(request, f"Erreur : {response.status_code}")
+        # 🔍 Récupérer l’ID du patient connecté
+        response_user = requests.get(API_BASE + f"users/profile/{username}/", headers=headers)
+        if response_user.status_code == 200:
+            user_data = response_user.json()
+            patient_id = user_data.get("id")
+
+            # 📅 Récupérer les rendez-vous du patient
+            response_appointments = requests.get(API_BASE + f"users/appointments/patient/{patient_id}/", headers=headers)
+            if response_appointments.status_code == 200:
+                appointments = response_appointments.json()
+            else:
+                messages.warning(request, "Impossible de charger les rendez-vous.")
+
+        # 👨‍⚕️ Liste des docteurs
+        response_doctors = requests.get(API_BASE + "users/doctor-list/", headers=headers)
+        if response_doctors.status_code == 200:
+            doctors = response_doctors.json()
+
     except requests.exceptions.RequestException:
         messages.error(request, "Erreur de communication avec le serveur.")
 
+    
     return render(request, "dashboards/patient_dashboard.html", {
         "username": username,
         "doctors": doctors,
+        "appointments": appointments,
+        "patient_id": patient_id,
+        "access_token": access_token,
     })
 
 
@@ -304,3 +324,61 @@ def profile_info(request):
         user_data = {}
 
     return render(request, "profile_info.html", {"user_data": user_data})
+
+
+
+def edit_appointment_view(request, id):
+    print("🔍 edit_appointment_view appelé avec id =", id)
+
+    if request.session.get("role") != "patient":
+        messages.error(request, "Accès interdit.")
+        return redirect("login")
+
+    headers = {"Authorization": f"Bearer {request.session['access_token']}"}
+
+    # 👉 Récupérer les détails du rendez-vous
+    url_detail = f"{API_BASE}appointments/{id}/"
+    response = requests.get(url_detail, headers=headers)
+
+    if response.status_code != 200:
+        messages.error(request, "Rendez-vous introuvable.")
+        return redirect("patient_dashboard")
+
+    appointment = response.json()
+
+    if request.method == "POST":
+        data = {
+            "doctor": appointment["doctor"],  # on garde le même docteur
+            "date": request.POST["date"],
+            "time": request.POST["time"],
+            "reason": request.POST["reason"],
+        }
+
+        # 👉 Envoyer un PATCH à l’API
+        resp = requests.patch(
+            f"{API_BASE}appointments/{id}/update/",
+            json=data,
+            headers=headers,
+        )
+
+        if resp.status_code == 200:
+            messages.success(request, "Rendez-vous modifié ✅")
+            return redirect("patient_dashboard")
+        else:
+            messages.error(request, "Erreur lors de la modification.")
+
+    return render(request, "edit_appointment.html", {"appointment": appointment})
+
+@login_required
+def delete_appointment_view(request, id):
+    if request.session.get("role") != "patient":
+        messages.error(request, "Accès interdit.")
+        return redirect("login")
+
+    headers = {"Authorization": f"Bearer {request.session['access_token']}"}
+    resp = requests.delete(f"{API_BASE}users/appointments/{id}/delete/", headers=headers)
+    if resp.status_code == 204:
+        messages.success(request, "Rendez-vous annulé ✅")
+    else:
+        messages.error(request, "Impossible de supprimer.")
+    return redirect("patient_dashboard")
