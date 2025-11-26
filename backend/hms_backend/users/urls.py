@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     AppointmentCreateView, AppointmentDetailView, AppointmentStatusUpdateView, DoctorAppointmentListView, MyDoctorAppointmentsView, PatientAppointmentDeleteView, PatientAppointmentListView, PatientAppointmentUpdateView, ProfileView, ProtectedView, RegisterView, PatientRegisterView, AdminRegisterView,
     DoctorRegisterView, DoctorListView, DoctorUpdateView, DoctorDeleteView,
-    PatientListView, PatientUpdateView, PatientDeleteView, admin_confirmed_appointments, doctor_appointments_with_patients, doctor_finished_patients, doctor_weekly_schedule, edit_appointment_view, patient_history
+    PatientListView, PatientUpdateView, PatientDeleteView, admin_confirmed_appointments, doctor_appointments_with_patients, doctor_finished_patients, doctor_weekly_schedule, edit_appointment_view, patient_confirmed_appointments, patient_history
 )
 from .custom_token import CustomTokenObtainPairView  # ✅ ICI
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -41,7 +41,7 @@ urlpatterns = [
     path('doctor/finished-patients/', doctor_finished_patients, name='doctor_finished_patients'),
     path('doctor/weekly-schedule/', doctor_weekly_schedule, name='api_doctor_weekly_schedule'),
     path('patient/history/', patient_history, name='api_patient_history'),
-
+    path('appointments/mine/', patient_confirmed_appointments, name='patient_confirmed_appointments'),
 
 
 ]

@@ -123,19 +123,19 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ a.patient.phone }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ a.reason|truncatechars:40 }}</td>
 
-                        <!-- PASTILLE COULEUR -->
+                        <!-- PASTILLE COULEUR + BLOCAGE SI ANNULÉ OU TERMINÉ -->
                         <td class="px-6 py-4 whitespace-nowrap">
-                            {% if a.status == 'COMPLETED' %}
+                            {% if a.status in 'COMPLETED,CANCELLED' %}
                                 <!-- Grisé + inutilisable -->
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700 select-none">
-                                    Terminé
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                            {% if a.status == 'COMPLETED' %}bg-gray-200 text-gray-700{% else %}bg-red-100 text-red-700{% endif %} select-none">
+                                    {% if a.status == 'COMPLETED' %}Terminé{% else %}Annulé{% endif %}
                                 </span>
                             {% else %}
                                 <select onchange="changeStatus({{ a.id }}, this.value)"
                                         class="text-xs border rounded px-2 py-1 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500
                                         {% if a.status == 'PENDING' %}border-amber-400 text-amber-700
                                         {% elif a.status == 'CONFIRMED' %}border-green-400 text-green-700
-                                        {% elif a.status == 'CANCELLED' %}border-red-400 text-red-700
                                         {% endif %}">
                                     <option value="PENDING"   {% if a.status == 'PENDING' %}selected{% endif %} class="bg-white text-amber-700">En attente</option>
                                     <option value="CONFIRMED" {% if a.status == 'CONFIRMED' %}selected{% endif %} class="bg-white text-green-700">Confirmé</option>

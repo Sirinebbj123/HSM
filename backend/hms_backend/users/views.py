@@ -449,3 +449,68 @@ def patient_history(request):
         })
 
     return Response(data)
+
+
+from datetime import date
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def patient_confirmed_appointments(request):
+    """
+    Prochains RDV CONFIRMED du patient connecté
+    avec icônes & pastilles comme maquette
+    """
+    if request.user.role != 'patient':
+        return Response({'error': 'Accès refusé.'}, status=403)
+
+    patient = get_object_or_404(Patient, user=request.user)
+
+    qs = (Appointment.objects
+          .filter(patient=patient,
+                  date__gte=date.today(),
+                  status='CONFIRMED')
+          .order_by('date', 'time')
+          .select_related('doctor'))
+
+    # regrouper par date
+    grouped = {}
+    for appt in qs:
+        day = appt.date
+        key = day.isoformat()
+        if key not in grouped:
+            grouped[key] = []
+        grouped[key].append({
+            'id': appt.id,
+            'date': appt.date,
+            'time': appt.time,
+            'reason': appt.reason,
+            'doctor_name': appt.doctor.full_name,
+            'speciality': appt.doctor.specialization,
+            'icon': '①' if appt.time.hour < 12 else 'の' if appt.time.hour < 15 else 'O'
+        })
+
+    # tri chronologique
+    sorted_keys = sorted(grouped.keys())
+    sections = []
+    today = date.today()
+    for key in sorted_keys:
+        day = date.fromisoformat(key)
+        diff = (day - today).days
+        if diff == 0:
+            header = "Aujourd'hui"
+        elif diff == 1:
+            header = "Demain"
+        elif diff == 2:
+            header = "Dans 2 jours"
+        elif diff <= 7:
+            header = f"Dans {diff} jours"
+        else:
+            header = day.strftime('%A %d %B')
+
+        items = grouped[key]
+        sections.append({
+            'header': header,
+            'items': items
+        })
+
+    return Response(sections)
