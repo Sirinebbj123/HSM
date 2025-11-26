@@ -9,13 +9,17 @@
         <i class="fa-solid fa-gauge-high w-5 h-5"></i>
         <span>Tableau de bord</span>
     </a>
-    <a href="{% url 'list_patients' %}" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out">
-        <i class="fa-solid fa-user-injured w-5 h-5"></i>
+    <a href="{% url 'doctor_finished_patients' %}" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition">
+        <i class="fa-solid fa-user-check w-5 h-5"></i>
         <span>Mes Patients</span>
     </a>
-    <a href="#" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out">
-        <i class="fa-solid fa-calendar-check w-5 h-5"></i>
-        <span>Mon Agenda</span>
+    <!-- <a href="{% url 'list_patients' %}" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out">
+        <i class="fa-solid fa-user-injured w-5 h-5"></i>
+        <span>Mes Patients</span>
+    </a> -->
+    <a href="{% url 'doctor_weekly_schedule' %}" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition">
+        <i class="fa-solid fa-calendar-week w-5 h-5"></i>
+        <span>Mon Planning</span>
     </a>
     <a href="{% url 'profile_info' %}" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out">
         <i class="fa-solid fa-user-gear w-5 h-5"></i>
@@ -28,10 +32,10 @@
 
 <div class="max-w-full mx-auto">
     <h1 class="text-3xl font-extrabold text-gray-800 mb-2">
-        <i class="fa-solid fa-hand-wave text-emerald-500 mr-2"></i> Bonjour, {{ stats.doctor_name }} !
+        <i class="fa-solid fa-hand-wave text-emerald-500 mr-2"></i> Bonjour, {{ doctor_name }} !
     </h1>
     <p class="text-lg text-gray-600 mb-10 border-b pb-4">
-        Spécialité : <strong class="text-blue-600">{{ stats.doctor_specialization }}</strong>
+        Spécialité : <strong class="text-blue-600">{{ doctor_specialization }}</strong>
     </p>
 
     <!-- 🧾 Statistiques principales -->
@@ -89,48 +93,111 @@
         </div>
     </div>
 
-    <!-- 📅 Agenda -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div class="bg-white p-8 rounded-2xl shadow-xl">
-            <h2 class="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-3 flex items-center">
-                <i class="fa-solid fa-calendar-day text-emerald-500 mr-3"></i> Agenda du jour
-            </h2>
-            {% if schedule %}
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Heure</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-100">
-                            {% for s in schedule %}
-                            <tr class="hover:bg-emerald-50 transition duration-150 ease-in-out">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ s.time }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ s.name }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        {% if s.status == 'Confirmed' %}bg-green-100 text-green-800{% elif s.status == 'Pending' %}bg-yellow-100 text-yellow-800{% else %}bg-gray-100 text-gray-800{% endif %}">
-                                        {{ s.status }}
-                                    </span>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <p class="text-gray-500 p-6 border border-dashed rounded-xl bg-gray-50 text-center shadow-inner">
-                    <i class="fa-solid fa-circle-info mr-2 text-xl text-gray-400"></i>
-                    Aucun rendez-vous pour aujourd’hui.
-                </p>
-            {% endif %}
+<!-- 📅 Tous les rendez-vous avec patients -->
+<div class="mt-10 bg-white p-8 rounded-2xl shadow-xl">
+    <h2 class="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-3 flex items-center">
+        <i class="fa-solid fa-calendar-days text-emerald-500 mr-3"></i> Gérer mes rendez-vous
+    </h2>
+
+    {% if appointments_with_patients %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Heure</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patient</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Âge</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Téléphone</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Motif</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    {% for a in appointments_with_patients %}
+                    <tr class="hover:bg-emerald-50 transition duration-150 ease-in-out">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ a.date }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ a.time }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ a.patient.full_name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ a.patient.age }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ a.patient.phone }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ a.reason|truncatechars:40 }}</td>
+
+                        <!-- PASTILLE COULEUR -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if a.status == 'COMPLETED' %}
+                                <!-- Grisé + inutilisable -->
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700 select-none">
+                                    Terminé
+                                </span>
+                            {% else %}
+                                <select onchange="changeStatus({{ a.id }}, this.value)"
+                                        class="text-xs border rounded px-2 py-1 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500
+                                        {% if a.status == 'PENDING' %}border-amber-400 text-amber-700
+                                        {% elif a.status == 'CONFIRMED' %}border-green-400 text-green-700
+                                        {% elif a.status == 'CANCELLED' %}border-red-400 text-red-700
+                                        {% endif %}">
+                                    <option value="PENDING"   {% if a.status == 'PENDING' %}selected{% endif %} class="bg-white text-amber-700">En attente</option>
+                                    <option value="CONFIRMED" {% if a.status == 'CONFIRMED' %}selected{% endif %} class="bg-white text-green-700">Confirmé</option>
+                                    <option value="CANCELLED" {% if a.status == 'CANCELLED' %}selected{% endif %} class="bg-white text-red-700">Annulé</option>
+                                    <option value="COMPLETED" {% if a.status == 'COMPLETED' %}selected{% endif %} class="bg-white text-gray-700">Terminé</option>
+                                </select>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+    {% else %}
+        <p class="text-gray-500 p-6 border border-dashed rounded-xl bg-gray-50 text-center shadow-inner">
+            <i class="fa-solid fa-circle-info mr-2 text-xl text-gray-400"></i>
+            Aucun rendez-vous trouvé.
+        </p>
+    {% endif %}
+</div>
+
+<!-- 📅 Mon Agenda (RDV confirmés) -->
+<div class="mt-10 bg-white p-8 rounded-2xl shadow-xl">
+    <h2 class="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-3 flex items-center">
+        <i class="fa-solid fa-calendar-check text-emerald-500 mr-3"></i> RDV confirmés
+    </h2>
+
+    {% if confirmed_appointments %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white border border-gray-200 rounded-xl shadow-sm">
+                <thead class="bg-emerald-50 text-gray-700">
+                    <tr>
+                        <th class="py-3 px-4 text-left">Date</th>
+                        <th class="py-3 px-4 text-left">Heure</th>
+                        <th class="py-3 px-4 text-left">Patient</th>
+                        <th class="py-3 px-4 text-left">Téléphone</th>
+                        <th class="py-3 px-4 text-left">Motif</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for a in confirmed_appointments %}
+                    <tr class="hover:bg-emerald-50 transition">
+                        <td class="py-3 px-4">{{ a.date }}</td>
+                        <td class="py-3 px-4">{{ a.time }}</td>
+                        <td class="py-3 px-4 font-medium">{{ a.patient.full_name }}</td>
+                        <td class="py-3 px-4">{{ a.patient.phone }}</td>
+                        <td class="py-3 px-4">{{ a.reason|truncatechars:50 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-gray-500 p-6 border border-dashed rounded-xl bg-gray-50 text-center">
+            <i class="fa-solid fa-circle-info mr-2 text-xl text-gray-400"></i>
+            Aucun rendez-vous confirmé pour le moment.
+        </p>
+    {% endif %}
+</div>
 
         <!-- 🚨 Alertes -->
-        <div class="bg-white p-8 rounded-2xl shadow-xl">
+        <div class="mt-10 bg-white p-8 rounded-2xl shadow-xl">
             <h2 class="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-3 flex items-center">
                 <i class="fa-solid fa-triangle-exclamation text-red-500 mr-3"></i> Alertes critiques
             </h2>
@@ -210,4 +277,23 @@
     }
   });
 </script>-->
+<script>
+async function changeStatus(appointmentId, newStatus) {
+  const res = await fetch(`/api/users/appointments/${appointmentId}/status/`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token }}',
+      'Authorization': 'Bearer {{ request.session.access_token }}'
+    },
+    body: JSON.stringify({ status: newStatus })
+  });
+
+  if (res.ok) {
+    location.reload(); // ou mets à jour le DOM en JS si tu veux éviter le reload
+  } else {
+    alert("Erreur lors du changement de statut.");
+  }
+}
+</script>
 {% endblock %}

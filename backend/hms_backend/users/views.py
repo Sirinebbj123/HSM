@@ -166,14 +166,11 @@ class PatientAppointmentListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        print("🔎 PatientAppointmentListView appelé avec id =", self.kwargs['id'])
-        patient_id = self.kwargs['id']  # Récupère l’ID depuis l’URL
+        user = self.request.user
         try:
-            patient = Patient.objects.get(id=patient_id)
+            patient = Patient.objects.get(user=user)
         except Patient.DoesNotExist:
             return Appointment.objects.none()  # Si patient introuvable → aucun résultat
-
-        user = self.request.user
 
         # 🛡️ Sécurité :
         # - Le patient ne peut voir que ses propres rendez-vous
@@ -187,7 +184,7 @@ class PatientAppointmentListView(generics.ListAPIView):
             return Appointment.objects.filter(doctor=user.doctor_profile, patient=patient)
 
         # L’admin voit tous les rendez-vous du patient
-        return Appointment.objects.filter(patient=patient) 
+        return Appointment.objects.filter(patient=patient)
 
 class MyDoctorAppointmentsView(generics.ListAPIView):
     serializer_class = AppointmentSerializer
@@ -318,4 +315,137 @@ def edit_appointment_view(request, id):
             messages.error(request, "Erreur lors de la modification.")
 
     # 3️⃣ Affichage du formulaire pré-rempli
-    return render(request, "edit_appointment.html", {"appointment": appointment})    
+    return render(request, "edit_appointment.html", {"appointment": appointment})  
+
+
+from rest_framework.decorators import api_view, permission_classes
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def doctor_appointments_with_patients(request):
+    user = request.user
+
+    if user.role != 'doctor':
+        return Response({"error": "Accès refusé. Seul un docteur peut consulter ses rendez-vous."}, status=403)
+
+    appointments = Appointment.objects.filter(doctor=user.doctor_profile).select_related('patient').order_by('-date', '-time')
+
+    data = [
+        {
+            "id": a.id,
+            "date": a.date,
+            "time": a.time,
+            "reason": a.reason,
+            "status": a.status,
+            "patient": {
+                "full_name": a.patient.full_name,
+                "age": a.patient.age,
+                "phone": a.patient.phone,
+                "email": a.patient.user.email,
+            }
+        }
+        for a in appointments
+    ]
+
+    return Response(data)
+
+def admin_confirmed_appointments(request):
+    if request.session.get("role") != "admin":
+        return redirect("login")
+
+    confirmed_appointments = Appointment.objects.filter(status='CONFIRMED').select_related('doctor', 'patient')
+
+    return render(request, "admin_confirmed_appointments.html", {
+        "confirmed_appointments": confirmed_appointments
+    })
+
+#liste complète des patients ayant un rendez-vous terminé
+from django.db.models import Max
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def doctor_finished_patients(request):
+    user = request.user
+    if user.role != 'doctor':
+        return Response({"error": "Accès refusé."}, status=403)
+
+    doctor = user.doctor_profile
+    search = request.GET.get('search', '').strip()
+
+    # Patients avec au moins un RDV terminé
+    qs = Patient.objects.filter(
+        patient_appointments__doctor=doctor,
+        patient_appointments__status='COMPLETED'
+    ).annotate(
+        last_visit=Max('patient_appointments__date')
+    ).distinct()
+
+    if search:
+        qs = qs.filter(full_name__icontains=search)
+
+    data = []
+    for p in qs:
+        last_appointment = Appointment.objects.filter(
+            patient=p, doctor=doctor, status='COMPLETED'
+        ).order_by('-date', '-time').first()
+
+        data.append({
+            "id": p.id,
+            "full_name": p.full_name,
+            "age": p.age,
+            "phone": p.phone,
+            "reason": last_appointment.reason,
+            "last_visit": last_appointment.date,
+        })
+
+    return Response(data)
+
+from datetime import timedelta
+from django.utils import timezone
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def doctor_weekly_schedule(request):
+    user = request.user
+    if user.role != 'doctor':
+        return Response({'error': 'Accès refusé.'}, status=403)
+
+    doctor = user.doctor_profile
+    today = timezone.now().date()
+    # lundi → vendredi de cette semaine
+    week_days = [today + timedelta(days=i) for i in range(5)]
+
+    data = {}
+    for day in week_days:
+        rdv = Appointment.objects.filter(
+            doctor=doctor,
+            date=day,
+            status='CONFIRMED'
+        ).order_by('time').values('time', 'patient__full_name')
+
+        data[day.strftime('%A')] = list(rdv)  # ex. "Lundi"
+    return Response(data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def patient_history(request):
+    user = request.user
+    if user.role != 'patient':
+        return Response({"error": "Accès refusé."}, status=403)
+
+    appointments = Appointment.objects.filter(
+        patient=user.patient_profile,
+        status='COMPLETED'
+    ).order_by('-date', '-time').select_related('doctor')
+
+    data = []
+    for appt in appointments:
+        data.append({
+            "date": appt.date,
+            "time": appt.time,
+            "doctor_name": appt.doctor.full_name,
+            "speciality": appt.doctor.specialization,
+        })
+
+    return Response(data)

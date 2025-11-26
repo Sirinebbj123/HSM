@@ -52,6 +52,7 @@ def register_page(request):
 # 🔐 Connexion
 # ===============================
 def login_page(request):
+    # Si déjà connecté → dashboard direct
     if request.session.get("role") in ["admin", "doctor", "patient"]:
         return redirect(f"{request.session.get('role')}_dashboard")
 
@@ -60,7 +61,10 @@ def login_page(request):
         password = request.POST.get("password")
 
         try:
-            response = requests.post(API_BASE + "users/login/", json={"username": username, "password": password})
+            response = requests.post(
+                API_BASE + "users/login/",
+                json={"username": username, "password": password}
+            )
 
             if response.status_code == 200:
                 data = response.json()
@@ -69,8 +73,17 @@ def login_page(request):
                 request.session["refresh_token"] = data.get("refresh")
                 request.session["role"] = data.get("role")
 
+                print("🔐 LOGIN : access_token stocké =", data.get("access")[:20])
+                print("🔐 LOGIN : role stocké =", data.get("role"))
+
                 messages.success(request, f"Bienvenue {username} 👋")
 
+                # 1. Rediriger vers la page demandée (next) si elle existe
+                next_url = request.POST.get('next') or request.GET.get('next')
+                if next_url:
+                    return redirect(next_url)
+
+                # 2. Sinon, dashboard classique
                 return redirect(f"{data.get('role')}_dashboard")
             else:
                 messages.error(request, "Nom d’utilisateur ou mot de passe invalide ❌")
@@ -78,8 +91,6 @@ def login_page(request):
             messages.error(request, "Erreur de connexion au serveur backend 🚫")
 
     return render(request, "login.html")
-
-
 # ===============================
 # 🚪 Déconnexion
 # ===============================
@@ -89,9 +100,7 @@ def logout_user(request):
     return redirect("login")
 
 
-# ===============================
 # 🩺 Dashboard Médecin
-# ===============================
 def doctor_dashboard(request):
     role = request.session.get("role")
     username = request.session.get("username")
@@ -103,6 +112,7 @@ def doctor_dashboard(request):
 
     headers = {"Authorization": f"Bearer {access_token}"}
     stats, schedule, alerts, weekly_performance_data = {}, [], [], []
+    appointments_with_patients = []  # ✅ NOUVEAU
 
     try:
         resp_stats = requests.get(f"{API_BASE}doctors/{username}/stats/", headers=headers)
@@ -117,18 +127,46 @@ def doctor_dashboard(request):
         resp_perf = requests.get(f"{API_BASE}doctors/{username}/weekly-performance/", headers=headers)
         weekly_performance_data = resp_perf.json() if resp_perf.status_code == 200 else []
 
+        # ✅ NOUVEAU : récupérer tous les RDV avec patients
+        resp_appointments = requests.get(f"{API_BASE}users/doctors/appointments/", headers=headers)
+        appointments_with_patients = resp_appointments.json() if resp_appointments.status_code == 200 else []
+
     except requests.exceptions.RequestException:
         messages.warning(request, "Erreur de connexion au backend.")
 
+    # 🩺 Récupérer le profil docteur
+    try:
+        doctor = Doctor.objects.get(user__username=username)
+        doctor_name = doctor.full_name
+        doctor_specialization = doctor.specialization
+    except Doctor.DoesNotExist:
+        doctor_name = username  # fallback
+        doctor_specialization = "Non spécifiée"    
+
+    # ----- Agenda : RDV confirmés -----
+    confirmed_appointments = []
+    try:
+        resp_agenda = requests.get(f"{API_BASE}users/doctors/appointments/", headers=headers)
+        if resp_agenda.status_code == 200:
+            all_appointments = resp_agenda.json()
+            confirmed_appointments = [
+                a for a in all_appointments if a['status'] == 'CONFIRMED'
+            ]
+            confirmed_appointments.sort(key=lambda x: (x['date'], x['time']))
+    except requests.exceptions.RequestException:
+        pass
+
     return render(request, "dashboards/doctor_dashboard.html", {
         "username": username,
+        "doctor_name": doctor_name,
+        "doctor_specialization": doctor_specialization,
         "stats": stats,
         "schedule": schedule,
         "alerts": alerts,
         "weekly_performance_data": weekly_performance_data,
+        "appointments_with_patients": appointments_with_patients,
+        "confirmed_appointments": confirmed_appointments,
     })
-
-
 # ===============================
 # 🧑‍⚕️ Dashboard Patient
 # ===============================
@@ -230,7 +268,7 @@ def admin_dashboard(request):
     appointments_today = Appointment.objects.filter(date=today).count()
 
     recent_appointments = Appointment.objects.select_related('doctor', 'patient').order_by('-created_at')[:10]
-
+    confirmed_appointments = Appointment.objects.filter(status='CONFIRMED').select_related('doctor', 'patient')
     context = {
         "username": username,
         "total_patients": total_patients,
@@ -238,6 +276,7 @@ def admin_dashboard(request):
         "appointments_today": appointments_today,
         "recent_appointments": recent_appointments,
         "today": today,
+        "confirmed_appointments": confirmed_appointments,
     }
     return render(request, "dashboards/admin_dashboard.html", context)
 
@@ -337,3 +376,52 @@ def delete_appointment_view(request, id):
         appointment.delete()
         messages.success(request, "Rendez-vous supprimé avec succès ✅")
     return redirect("patient_dashboard")
+
+
+def doctor_finished_patients_view(request):
+    role = request.session.get("role")
+    access_token = request.session.get("access_token")
+
+    if role != "doctor" or not access_token:
+        messages.error(request, "Accès refusé.")
+        return redirect("login")
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    patients = []
+
+    try:
+        response = requests.get(f"{API_BASE}users/doctor/finished-patients/", headers=headers)
+        if response.status_code == 200:
+            patients = response.json()
+        else:
+            messages.warning(request, "Erreur lors du chargement des patients.")
+    except requests.exceptions.RequestException:
+        messages.error(request, "Erreur de connexion au serveur.")
+
+    return render(request, "doctor_finished_patients.html", {"patients": patients})
+
+def doctor_weekly_schedule_view(request):
+    role = request.session.get('role')
+    access_token = request.session.get('access_token')
+
+    if role != 'doctor' or not access_token:
+        messages.error(request, 'Accès non autorisé.')
+        return redirect('login')
+
+    # On va appeler l’API en JS comme pour finished-patients
+    return render(request, 'doctor_weekly_schedule.html', {
+        'access_token': access_token
+    })
+
+
+def patient_history_view(request):
+    role = request.session.get('role')
+    access_token = request.session.get('access_token')
+
+    if role != 'patient' or not access_token:
+        messages.error(request, 'Accès non autorisé.')
+        return redirect('login')
+
+    return render(request, 'patient_history.html', {
+        'access_token': access_token
+    })

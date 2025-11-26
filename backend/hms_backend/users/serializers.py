@@ -38,6 +38,7 @@ class PatientRegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError({"username": "Ce nom d'utilisateur existe déjà."})
         if User.objects.filter(email=validated_data['email']).exists():
             raise serializers.ValidationError({"email": "Cet email existe déjà."})
+
         # Création de l'utilisateur
         user = User.objects.create(
             username=validated_data['username'],
@@ -56,31 +57,7 @@ class PatientRegisterSerializer(serializers.Serializer):
             address=validated_data['address']
         )
 
-        # On retourne les deux objets pour la représentation
         return {"user": user, "patient": patient}
-
-    def to_representation(self, instance):
-        """
-        Personnalisation de la réponse renvoyée à l'utilisateur.
-        """
-        user = instance["user"]
-        patient = instance["patient"]
-
-        return {
-            "message": "Patient enregistré avec succès",
-            "user": {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "role": user.role
-            },
-            "patient": {
-                "full_name": patient.full_name,
-                "age": patient.age,
-                "phone": patient.phone,
-                "address": patient.address
-            }
-        }
 class AdminRegisterSerializer(serializers.Serializer):
     username = serializers.CharField()
     email = serializers.EmailField()

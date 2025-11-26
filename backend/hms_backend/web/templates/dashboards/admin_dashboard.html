@@ -15,9 +15,9 @@
         <i class="fa-solid fa-user-injured w-5 h-5"></i>
         <span>Patients</span>
     </a>
-    <a href="#" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out">
+    <a href="{% url 'admin_confirmed_appointments' %}" class="flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out">
         <i class="fa-solid fa-calendar-check w-5 h-5"></i>
-        <span>Rendez-vous</span>
+        <span>Rendez-vous Confirmés</span>
     </a>
 {% endblock %}
 
@@ -26,12 +26,13 @@
 {% block content %}
     <div class="max-w-full mx-auto">
         <h1 class="text-3xl font-extrabold text-gray-800 mb-6">
-            <i class="fa-solid fa-hand-wave text-emerald-500 mr-2"></i> Bonjour, {{ username }} !
+            <i class="fa-solid fa-hand-wave text-emerald-500 mr-2"></i> Bonjour, <strong class="text-emerald-600">{{ username }} </strong>!
         </h1>
-        <p class="text-lg text-gray-600 mb-10 border-b pb-4">
+        <!-- <p class="text-lg text-gray-600 mb-10 border-b pb-4">
             Vous êtes connecté en tant qu’<strong class="text-emerald-600">Administrateur</strong>.
         </p>
-
+        -->
+        <p class=" mb-10 border-b pb-4"></p>
         <!-- Statistiques principales -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             <div class="stat-card bg-white p-6 rounded-2xl shadow-xl border-l-4 border-blue-500 hover:shadow-2xl transition duration-300 ease-in-out">
